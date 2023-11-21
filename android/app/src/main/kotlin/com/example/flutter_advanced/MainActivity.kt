@@ -1,4 +1,4 @@
-package com.example.research_methodchannel
+package com.example.flutter_advanced
 
 import android.R.attr.data
 import android.widget.Toast

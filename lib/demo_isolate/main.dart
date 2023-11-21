@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -16,12 +15,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Demo Isolate',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Isolate Demo'),
+      home: const MyHomePage(title: 'Demo Isolate'),
     );
   }
 }
@@ -129,40 +128,32 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   static void sum(List<dynamic> param) {
-    // int count = 0;
-    // SendPort sendPort = param[0];
-    // Product product = param[2];
-    // ReceivePort receivePort = ReceivePort();
-    // int total = 0;
-    // for (int i = 0; i < param[1]; i++) {
-    //   total += i;
-    //   print(i);
-    //   sleep(const Duration(seconds: 1));
-    // }
-    // sendPort.send([receivePort.sendPort, total, product]);
-    // receivePort.listen(
-    //   (message) {
-    //     print('Nhan tu main: $message');
-    //     if (param[1] - 1 > 0) {
-    //       sum(
-    //         [
-    //           sendPort,
-    //           5,
-    //           Product(
-    //             id: param[1] - 1 as int,
-    //             name: 'Lap lai lan thu ${(param[1] - 1)}',
-    //           )
-    //         ],
-    //       );
-    //     }
-    //   },
-    // );
-
-    final stream =
-        Stream<int>.periodic(const Duration(seconds: 1), (count) => count);
-
-    stream.listen((event) {
-      print('asdsadasdasd $event');
-    });
+    SendPort sendPort = param[0];
+    Product product = param[2];
+    ReceivePort receivePort = ReceivePort();
+    int total = 0;
+    for (int i = 0; i < param[1]; i++) {
+      total += i;
+      print(i);
+      sleep(const Duration(seconds: 1));
+    }
+    sendPort.send([receivePort.sendPort, total, product]);
+    receivePort.listen(
+      (message) {
+        print('Nhan tu main: $message');
+        if (param[1] - 1 > 0) {
+          sum(
+            [
+              sendPort,
+              5,
+              Product(
+                id: param[1] - 1 as int,
+                name: 'Lap lai lan thu ${(param[1] - 1)}',
+              )
+            ],
+          );
+        }
+      },
+    );
   }
 }
