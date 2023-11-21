@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_advanced/demo_method_channel/device_info.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,10 +34,27 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // static const toastChannel = MethodChannel(
-  //     'com.example.research_method_channel/toast', JSONMethodCodec());
-  static const toastChannel =
-      MethodChannel('com.example.research_method_channel/toast');
+  static const defaultMethodChannel =
+      MethodChannel('com.example.flutter_advanced/defaultMethodChannel');
+
+  static const jsonMethodChannel = MethodChannel(
+    'com.example.flutter_advanced/jsonMethodChannel',
+    JSONMethodCodec(),
+  );
+  static const eventChannel =
+      EventChannel('com.example.flutter_advanced/eventChannel');
+
+  StreamSubscription? _timerSubscription;
+
+  String _deviceInfoString = 'empty';
+  String _deviceInfoJson = 'empty';
+  String _timer = '';
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,11 +66,30 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Text(_deviceInfoString),
             ElevatedButton(
-              child: const Text('show toast'),
+              child: const Text('Get String Device Info'),
               onPressed: () {
-                showToast('Hello world');
+                _getStringDeviceInfo();
               },
+            ),
+            const SizedBox(height: 16),
+            Text(_deviceInfoJson),
+            ElevatedButton(
+              child: const Text('Get Json Device Info'),
+              onPressed: () {
+                _getJsonDeviceInfo();
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(_timer),
+            ElevatedButton(
+              onPressed: _enableTimer,
+              child: const Text('Start listen Time'),
+            ),
+            ElevatedButton(
+              onPressed: _disableTimer,
+              child: const Text('Stop listen Time'),
             ),
           ],
         ),
@@ -58,13 +97,48 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  showToast(String message) async {
+  _getStringDeviceInfo() async {
     try {
-      final result = await toastChannel.invokeMethod('showToast', message);
-      print(result);
+      String? result =
+          await defaultMethodChannel.invokeMethod('getStringDeviceInfo', {
+        "type": "MODEL",
+      });
+      _deviceInfoString = result!;
     } catch (e) {
-      // e is PlatformException when result.error or MissingPluginException when result.notImplemented
-      print(e);
+      _deviceInfoString = 'can not get device info';
+      debugPrint('######### $e');
     }
+    setState(() {});
+  }
+
+  _getJsonDeviceInfo() async {
+    try {
+      var result = await jsonMethodChannel.invokeMethod('getJsonDeviceInfo', {
+        "type": "MODEL",
+      });
+      final deviceInfo = DeviceInfo.fromJson(result);
+      _deviceInfoJson = deviceInfo.model;
+    } catch (e) {
+      _deviceInfoJson = 'can not get device info';
+      debugPrint('######### $e');
+    }
+    setState(() {});
+  }
+
+  void _enableTimer() {
+    _timerSubscription ??=
+        eventChannel.receiveBroadcastStream().listen(_updateTimer);
+  }
+
+  void _disableTimer() {
+    if (_timerSubscription != null) {
+      _timerSubscription?.cancel();
+      _timerSubscription = null;
+    }
+  }
+
+  void _updateTimer(timer) {
+    debugPrint("Timer $timer");
+    setState(() => _timer = timer);
   }
 }
