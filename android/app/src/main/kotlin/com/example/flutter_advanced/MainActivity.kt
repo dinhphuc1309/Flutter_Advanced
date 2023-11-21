@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
@@ -94,34 +95,35 @@ class MainActivity : FlutterActivity() {
         //Event channel
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL).setStreamHandler(
             object : EventChannel.StreamHandler {
-                private var handler = Handler(Looper.getMainLooper())
                 private var eventSink: EventChannel.EventSink? = null
+                private var timer: CountDownTimer? = null
 
-                @SuppressLint("SimpleDateFormat")
                 override fun onListen(args: Any?, events: EventChannel.EventSink) {
                     eventSink = events
-
-                    val r: Runnable = object : Runnable {
-                        override fun run() {
-                            handler.post {
-                                val dateFormat = SimpleDateFormat("HH:mm:ss")
-                                val time = dateFormat.format(Date())
-                                eventSink?.success(time)
-                            }
-                            handler.postDelayed(this, 1000)
+                    timer = object : CountDownTimer(100000000, 1000) {
+                        override fun onTick(millisUntilFinished: Long) {
+                            val dateFormat = SimpleDateFormat("HH:mm:ss")
+                            val time = dateFormat.format(Date())
+                            eventSink?.success(time)
                         }
-                    }
-                    handler.postDelayed(r, 1000)
+
+                        override fun onFinish() {
+                            eventSink?.success(null)
+                        }
+                    }.start()
+
                 }
 
                 override fun onCancel(args: Any?) {
                     eventSink = null
-                    handler.removeCallbacksAndMessages(null)
+                    timer?.cancel();
+
                 }
             })
 
 
     }
+
 
     private fun getStringDeviceInfo(type: String): String? {
         return if (type == "MODEL") {

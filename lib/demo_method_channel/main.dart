@@ -138,6 +138,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _updateTimer(timer) {
+    if (timer == null) {
+      _disableTimer();
+      return;
+    }
     debugPrint("Timer $timer");
     setState(() => _timer = timer);
   }
