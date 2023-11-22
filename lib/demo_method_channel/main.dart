@@ -34,17 +34,18 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  static const defaultMethodChannel =
+  static const _defaultMethodChannel =
       MethodChannel('com.example.flutter_advanced/defaultMethodChannel');
 
-  static const jsonMethodChannel = MethodChannel(
+  static const _jsonMethodChannel = MethodChannel(
     'com.example.flutter_advanced/jsonMethodChannel',
     JSONMethodCodec(),
   );
-  static const eventChannel =
+  static const _eventChannel =
       EventChannel('com.example.flutter_advanced/eventChannel');
 
   StreamSubscription? _timerSubscription;
+  Stream<dynamic>? _stream;
 
   String _deviceInfoString = 'empty';
   String _deviceInfoJson = 'empty';
@@ -84,11 +85,15 @@ class _MyHomePageState extends State<MyHomePage> {
             const SizedBox(height: 16),
             Text(_timer),
             ElevatedButton(
-              onPressed: _enableTimer,
+              onPressed: _setUpBroadcastStream,
+              child: const Text('Set up broadcast stream'),
+            ),
+            ElevatedButton(
+              onPressed: _startListenTimer,
               child: const Text('Start listen Time'),
             ),
             ElevatedButton(
-              onPressed: _disableTimer,
+              onPressed: _disableListenTimer,
               child: const Text('Stop listen Time'),
             ),
           ],
@@ -100,7 +105,7 @@ class _MyHomePageState extends State<MyHomePage> {
   _getStringDeviceInfo() async {
     try {
       String? result =
-          await defaultMethodChannel.invokeMethod('getStringDeviceInfo', {
+          await _defaultMethodChannel.invokeMethod('getStringDeviceInfo', {
         "type": "MODEL",
       });
       _deviceInfoString = result!;
@@ -113,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   _getJsonDeviceInfo() async {
     try {
-      var result = await jsonMethodChannel.invokeMethod('getJsonDeviceInfo', {
+      var result = await _jsonMethodChannel.invokeMethod('getJsonDeviceInfo', {
         "type": "MODEL",
       });
       final deviceInfo = DeviceInfo.fromJson(result);
@@ -125,24 +130,44 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {});
   }
 
-  void _enableTimer() {
-    _timerSubscription ??=
-        eventChannel.receiveBroadcastStream().listen(_updateTimer);
+  void _setUpBroadcastStream() {
+    if (_stream == null) {
+      try {
+        _stream = _eventChannel.receiveBroadcastStream(10);
+        setState(() => _timer = "Broadcast Stream ready");
+      } catch (e) {
+        debugPrint('######### $e');
+      }
+    }
   }
 
-  void _disableTimer() {
+  void _startListenTimer() {
+    try {
+      _timerSubscription ??= _stream?.listen(_updateTimer, onDone: () {
+        _disableListenTimer();
+        setState(() => _timer = 'Done');
+      }, onError: (e) {
+        debugPrint('######### $e');
+      });
+    } catch (e) {
+      debugPrint('######### $e');
+    }
+  }
+
+  void _disableListenTimer() {
     if (_timerSubscription != null) {
       _timerSubscription?.cancel();
       _timerSubscription = null;
+      _stream = null;
     }
   }
 
   void _updateTimer(timer) {
-    if (timer == null) {
-      _disableTimer();
-      return;
+    try {
+      debugPrint("Timer $timer");
+      setState(() => _timer = timer.toString());
+    } catch (e) {
+      debugPrint('######### $e');
     }
-    debugPrint("Timer $timer");
-    setState(() => _timer = timer);
   }
 }

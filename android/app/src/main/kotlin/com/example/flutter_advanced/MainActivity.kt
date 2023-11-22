@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
@@ -95,28 +96,31 @@ class MainActivity : FlutterActivity() {
         //Event channel
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL).setStreamHandler(
             object : EventChannel.StreamHandler {
-                private var eventSink: EventChannel.EventSink? = null
                 private var timer: CountDownTimer? = null
 
                 override fun onListen(args: Any?, events: EventChannel.EventSink) {
-                    eventSink = events
-                    timer = object : CountDownTimer(100000000, 1000) {
+                    Log.d("Android log", "Listen event channel with args: $args")
+                    var second = args as Int
+                    timer = object : CountDownTimer((second * 1000).toLong(), 1000) {
                         override fun onTick(millisUntilFinished: Long) {
-                            val dateFormat = SimpleDateFormat("HH:mm:ss")
-                            val time = dateFormat.format(Date())
-                            eventSink?.success(time)
+                            Log.d("Android log", second.toString())
+                            events.success(second)
+                            second-=1
+                            // throw UnsupportedOperationException()
                         }
 
                         override fun onFinish() {
-                            eventSink?.success(null)
+                            events.endOfStream()
+                            Log.d("Android log", "Finish time")
                         }
                     }.start()
 
                 }
 
                 override fun onCancel(args: Any?) {
-                    eventSink = null
+                    Log.d("Android log", "Cancel event channel with args: $args")
                     timer?.cancel();
+
 
                 }
             })
