@@ -30,7 +30,6 @@ class MainActivity : FlutterActivity() {
     private val EVENT_CHANNEL = "com.example.flutter_advanced/eventChannel"
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-
         //Default method channel
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -50,7 +49,12 @@ class MainActivity : FlutterActivity() {
                         result.success(getStringDeviceInfo(type))
                     }
                 }
-
+                "getFlavor" ->{
+                    result.success(BuildConfig.FLAVOR)
+                }
+                "getApplicationId"->{
+                    result.success(BuildConfig.APPLICATION_ID)
+                }
                 else -> {
                     result.notImplemented()
                 }

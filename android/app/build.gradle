@@ -1,3 +1,6 @@
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
 plugins {
     id "com.android.application"
     id "kotlin-android"
@@ -22,6 +25,36 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def getCurrentFlavor() {
+    Gradle gradle = getGradle()
+    String  tskReqStr = gradle.getStartParameter().getTaskRequests().toString()
+
+    Pattern pattern
+
+    if( tskReqStr.contains( "assemble" ) ) // to run ./gradlew assembleRelease to build APK
+        pattern = Pattern.compile("assemble(\\w+)(Release|Debug)")
+    else if( tskReqStr.contains( "bundle" ) ) // to run ./gradlew bundleRelease to build .aab
+        pattern = Pattern.compile("assemble(\\w+)(Release|Debug)")
+    else
+        pattern = Pattern.compile("generate(\\w+)(Release|Debug)")
+
+    Matcher matcher = pattern.matcher( tskReqStr )
+
+    if( matcher.find() )
+        return matcher.group(1).toLowerCase()
+    else
+    {
+        println "NO MATCH FOUND"
+        return ""
+    }
+}
+
+def signingStoreFile = 'keystore'
+def signingStorePassword = '123456Aa@'
+def signingKeyAlias = 'dinhphuc'
+def signingKeyPassword = '13092001'
+
+
 android {
     namespace "com.example.flutter_advanced"
     compileSdkVersion flutter.compileSdkVersion
@@ -40,6 +73,16 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
+
+    signingConfigs {
+        release {
+            storeFile file(signingStoreFile)
+            storePassword signingStorePassword
+            keyAlias signingKeyAlias
+            keyPassword signingKeyPassword
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.example.flutter_advanced"
@@ -52,13 +95,81 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
+
+
+    flavorDimensions = ["environment"]
+    productFlavors {
+        dev {
+            dimension "environment"
+            resValue "string", "app_name", "App DEV"
+            applicationIdSuffix ".dev"
+            versionNameSuffix ".dev"
+        }
+        staging {
+            dimension "environment"
+            resValue "string", "app_name", "App STAGING"
+            applicationIdSuffix ".staging"
+            versionNameSuffix ".staging"
+        }
+        prod {
+            dimension "environment"
+            resValue "string", "app_name", "App PROD"
+        }
+
+    }
+
+    def flavor = getCurrentFlavor()
+    if (flavor == "prod") {
+        flutter.target "lib/demo_multi_flavor/main_prod.dart"
+    } else if(flavor == "staging") {
+        flutter.target "lib/demo_multi_flavor/main_staging.dart"
+    }else{
+        flutter.target "lib/demo_multi_flavor/main_dev.dart"
+    }
+
+//    flavorDimensions = ["environment", "version"]
+//    productFlavors {
+//        dev {
+//            dimension "environment"
+//            applicationIdSuffix ".dev"
+//            versionNameSuffix ".dev"
+//            flutter.target "lib/demo_multi_flavor/main.dart"
+//        }
+//        staging {
+//            dimension "environment"
+//            applicationIdSuffix ".staging"
+//            versionNameSuffix ".staging"
+//            flutter.target "lib/demo_multi_flavor/main.dart"
+//        }
+//        prod {
+//            dimension "environment"
+//            flutter.target "lib/demo_multi_flavor/main.dart"
+//        }
+//        free{
+//            dimension "version"
+//            applicationIdSuffix ".free"
+//        }
+//        paid{
+//            dimension "version"
+//            applicationIdSuffix ".paid"
+//        }
+//    }
+//    applicationVariants.all { variant ->
+//        variant.resValue "string", "app_name", "App ${variant.productFlavors[0].name.capitalize()} ${variant.productFlavors[1].name.capitalize()}"
+//    }
+
 }
+
 
 flutter {
     source '../..'
